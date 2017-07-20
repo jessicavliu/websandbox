@@ -179,17 +179,19 @@ print(prodset.find_prod_length(p))
 print()
 
 #18
-print("List all prods in cat in a certain range")
-print()
+extrema = "max"
+group = "Music"
+print("Longest/smallest length prod in cat/store")
+print(prodset.find_extrema_length(extrema, group))
 print()
 
 #19
-print("longest/smallest length prod in cat/store")
-print()
+print("order prods based on length asc/desc")
+print(prodset.order_prods_by_length("desc"))
 print()
 
 #20
-print("order prods based on length asc/desc")
+print("List all prods in cat in a certain range of length")
 print()
 print()
 
@@ -201,21 +203,23 @@ prodset.setTblHeader(tbl_header)
 #-----------------------------------------
 #DELETE
 
-clause = ""
-prodset.delete_product(clause)
+'''clause = ""
+prodset.delete_product(clause)'''
 #-----------------------------------------
 ###INSERT
 
-title = ""
+'''title = ""
 content = ""
 
 for i in range(1, 51):
 	title = "title " + str(i)
 	content = "content " + str(i)
-	prodset.insert_product(title, content)
+	prodset.insert_product(title, content)'''
 
 ###UPDATE
 
-prodset.update_product_description('title3', 'updated')
+#prodset.update_product_description('title3', 'updated')
+
+#---
 
 prodset.getDb().close()

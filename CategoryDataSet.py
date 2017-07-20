@@ -51,12 +51,18 @@ class CategoryDataSet:
 
 		#Preprocessing
 		#Deleting product-cat if exists, creating a table from inner join and populating it with info
-		self.cursor.execute("DROP TABLE IF EXISTS product_cat")
-		self.cursor.execute("CREATE TABLE product_cat as SELECT wp_term_taxonomy.term_id, wp_term_taxonomy.term_taxonomy_id, wp_terms.name,  wp_term_taxonomy.taxonomy, wp_term_taxonomy.description, wp_term_taxonomy.parent, wp_term_taxonomy.count FROM wp_terms INNER JOIN wp_term_taxonomy ON wp_terms.term_id = wp_term_taxonomy.term_id WHERE wp_term_taxonomy.taxonomy = 'product_cat'")
+		
+		#self.cursor.execute("DROP TABLE IF EXISTS product_cat")
+		#self.cursor.execute("CREATE TABLE product_cat as SELECT wp_term_taxonomy.term_id, wp_term_taxonomy.term_taxonomy_id, wp_terms.name,  wp_term_taxonomy.taxonomy, wp_term_taxonomy.description, wp_term_taxonomy.parent, wp_term_taxonomy.count FROM wp_terms INNER JOIN wp_term_taxonomy ON wp_terms.term_id = wp_term_taxonomy.term_id WHERE wp_term_taxonomy.taxonomy = 'product_cat'")
+		self.cursor.execute("DROP VIEW IF EXISTS product_cat")
+		self.cursor.execute("CREATE VIEW product_cat as SELECT wp_term_taxonomy.term_id, wp_term_taxonomy.term_taxonomy_id, wp_terms.name,  wp_term_taxonomy.taxonomy, wp_term_taxonomy.description, wp_term_taxonomy.parent, wp_term_taxonomy.count FROM wp_terms INNER JOIN wp_term_taxonomy ON wp_terms.term_id = wp_term_taxonomy.term_id WHERE wp_term_taxonomy.taxonomy = 'product_cat'")
 
 		#couldn't inner join both tables because error is thrown w/ post_date. I've joined post_title to post_meta as a hack, but I need to fix this to connect both tables fully together.
-		self.cursor.execute("DROP TABLE IF EXISTS product_meta")
-		self.cursor.execute("CREATE TABLE product_meta as SELECT t1.post_title, t2.* FROM wp_posts AS t1 INNER JOIN wp_postmeta AS t2 ON t1.id = t2.post_id WHERE t1.post_type = 'product'")
+		
+		#self.cursor.execute("DROP TABLE IF EXISTS product_meta")
+		#self.cursor.execute("CREATE TABLE product_meta as SELECT t1.post_title, t2.* FROM wp_posts AS t1 INNER JOIN wp_postmeta AS t2 ON t1.id = t2.post_id WHERE t1.post_type = 'product'")
+		self.cursor.execute("DROP VIEW IF EXISTS product_meta")
+		self.cursor.execute("CREATE VIEW product_meta as SELECT t1.post_title, t2.* FROM wp_posts AS t1 INNER JOIN wp_postmeta AS t2 ON t1.id = t2.post_id WHERE t1.post_type = 'product'")
 
 		###NOTE: check that data is not null. If data == empty set, errors will happen and my life will be sad.
 
@@ -90,26 +96,26 @@ class CategoryDataSet:
 	###Add params
 	#example for insert_category
 	def insert_product(self, title, content):
-		sql = "INSERT INTO wp_posts (post_title, post_content, post_date, post_date_gmt, post_modified, post_modified_gmt, post_excerpt, to_ping, pinged, post_content_filtered, post_type) VALUES (" + "\'" + title + "\'" + ", " + "\'" + content + "\'" + ", NOW(), NOW(), NOW(), NOW(), '', '', '', '', 'product')" 
-		try:
-			self.cursor.execute(sql)
-			db.commit()
-		except:
-			db.rollback()
-			print ("Error: could not insert")
+		sql = "INSERT INTO " + self.posts + " (post_title, post_content, post_date, post_date_gmt, post_modified, post_modified_gmt, post_excerpt, to_ping, pinged, post_content_filtered, post_type) VALUES (" + "\'" + title + "\'" + ", " + "\'" + content + "\'" + ", NOW(), NOW(), NOW(), NOW(), '', '', '', '', 'product')" 
+		self.cursor.execute(sql)
+		self.db.commit()
 
-	def insert_category(self, title, content):
-		sql = "INSERT INTO wp_posts (post_title, post_content, post_date, post_date_gmt, post_modified, post_modified_gmt, post_excerpt, to_ping, pinged, post_content_filtered, post_type) VALUES (" + "\'" + title + "\'" + ", " + "\'" + content + "\'" + ", NOW(), NOW(), NOW(), NOW(), '', '', '', '', 'product')" 
-	
+	def insert_category(self, name, description, parent = 0):
+		sql_term = "INSERT INTO " + self.terms + " (name, slug) VALUES (" + "\'" + name + "\'" + ", " + "\'" + name.lower() + "\'" + ")"
+		self.cursor.execute(sql_term)
+
+		sql_term_taxonomy = "INSERT INTO " + self.term_taxonomy + " (term_id, taxonomy, description, parent)" + "VALUES (LAST_INSERT_ID(), 'product_cat', " + "\'" + description + "\'" + ", " + str(parent) + ")"
+		self.cursor.execute(sql_term_taxonomy)
+		self.db.commit()
 	######UPDATE
-	def update_product_description(self, prod_name, description):
+	'''def update_product_description(self, prod_name, description):
 		try:
 			sql = "UPDATE wp_posts SET post_content = " + "\'" + description + "\'" "where post_title = " + "\'" + prod_name + "\'"
 			self.cursor.execute(sql)
 			db.commit()
 		except:
 			db.rollback()
-			print("Error: could not update")
+			print("Error: could not update")'''
 
 	#insert_product('test2', 'testing test2')
 

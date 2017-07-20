@@ -1,43 +1,43 @@
 
 class Product:
 
-	title
-	content
+	title=""
+	content=""
 
-	wp_page_template 
-	wc_review_count  
-	wc_rating_count  
-	wc_average_rating  
-	edit_lock  
-	edit_last  
-	sku  
-	regular_price  
-	sale_price  
-	sale_price_dates_from  
-	sale_price_dates_to 
-	total_sales 
-	tax_status  
-	tax_class 
-	manage_stock 
-	backorders 
-	sold_individually 
-	weight  
-	length  
-	width  
-	height 
-	upsell_ids
-	crosssell_ids  
-	purchase_note 
-	default_attributes 
-	virtual  
-	downloadable 
-	product_image_gallery  
-	download_limit 
-	download_expiry 
-	stock 
-	stock_status  
-	product_version  
-	price 
+	wp_page_template=""
+	wc_review_count=""
+	wc_rating_count=""  
+	wc_average_rating=""  
+	edit_lock=""
+	edit_last=""
+	sku=""
+	regular_price=""  
+	sale_price=""
+	sale_price_dates_from=""  
+	sale_price_dates_to=""
+	total_sales=""
+	tax_status=""
+	tax_class=""
+	manage_stock="" 
+	backorders=""
+	sold_individually="" 
+	weight=""
+	length=""
+	width=""
+	height=""
+	upsell_ids=""
+	crosssell_ids=""  
+	purchase_note=""
+	default_attributes="" 
+	virtual=""
+	downloadable="" 
+	product_image_gallery=""  
+	download_limit=""
+	download_expiry=""
+	stock=""
+	stock_status=""  
+	product_version="" 
+	price=""
 
 	def __init__(self, title, content, _wp_page_template = "default", _wc_review_count = "0", _wc_rating_count = "a:0:{}", _wc_average_rating = "0", _edit_lock = "", _edit_last = "", _sku = "", _regular_price = "", _sale_price = "", _sale_price_dates_from = "", _sale_price_dates_to = "", total_sales = "0", _tax_status = "taxable", _tax_class = "", _manage_stock = "no", _backorders = "no", _sold_individually = "no", _weight = "", _length = "", _width = "", _height = "", _upsell_ids = "a:0:{}", _crosssell_ids = "a:0:{}", _purchase_note = "", _default_attributes = "a:0:{}", _virtual = "no", _downloadable = "no", _product_image_gallery = "", _download_limit = "-1", _download_expiry = "-1", _stock = None, _stock_status = "instock", _product_version = "3.0.9", _price = ""):
 		
@@ -247,7 +247,7 @@ class Product:
 	def get_virtual(self):
 		return self.virtual
 
-	def set_downloadable(self, _downloadable)
+	def set_downloadable(self, _downloadable):
 		self.downloadable = _downloadable
 
 	def get_downloadable(self):

@@ -59,12 +59,22 @@ class ProductDataSet:
 
 		#Preprocessing
 		#Deleting product-cat if exists, creating a table from inner join and populating it with info
-		self.cursor.execute("DROP TABLE IF EXISTS product_cat")
-		self.cursor.execute("CREATE TABLE product_cat as SELECT wp_term_taxonomy.term_id, wp_term_taxonomy.term_taxonomy_id, wp_terms.name,  wp_term_taxonomy.taxonomy, wp_term_taxonomy.description, wp_term_taxonomy.parent, wp_term_taxonomy.count FROM wp_terms INNER JOIN wp_term_taxonomy ON wp_terms.term_id = wp_term_taxonomy.term_id WHERE wp_term_taxonomy.taxonomy = 'product_cat'")
+		
+		#self.cursor.execute("DROP TABLE IF EXISTS product_cat")
+		#self.cursor.execute("CREATE TABLE product_cat as SELECT wp_term_taxonomy.term_id, wp_term_taxonomy.term_taxonomy_id, wp_terms.name,  wp_term_taxonomy.taxonomy, wp_term_taxonomy.description, wp_term_taxonomy.parent, wp_term_taxonomy.count FROM wp_terms INNER JOIN wp_term_taxonomy ON wp_terms.term_id = wp_term_taxonomy.term_id WHERE wp_term_taxonomy.taxonomy = 'product_cat'")
+		self.cursor.execute("DROP VIEW IF EXISTS product_cat")
+		self.cursor.execute("CREATE VIEW product_cat as SELECT wp_term_taxonomy.term_id, wp_term_taxonomy.term_taxonomy_id, wp_terms.name,  wp_term_taxonomy.taxonomy, wp_term_taxonomy.description, wp_term_taxonomy.parent, wp_term_taxonomy.count FROM wp_terms INNER JOIN wp_term_taxonomy ON wp_terms.term_id = wp_term_taxonomy.term_id WHERE wp_term_taxonomy.taxonomy = 'product_cat'")
 
 		#couldn't inner join both tables because error is thrown w/ post_date. I've joined post_title to post_meta as a hack, but I need to fix this to connect both tables fully together.
-		self.cursor.execute("DROP TABLE IF EXISTS product_meta")
-		self.cursor.execute("CREATE TABLE product_meta as SELECT t1.post_title, t2.* FROM wp_posts AS t1 INNER JOIN wp_postmeta AS t2 ON t1.id = t2.post_id WHERE t1.post_type = 'product'")
+		
+		#self.cursor.execute("DROP TABLE IF EXISTS product_meta")
+		#self.cursor.execute("CREATE TABLE product_meta as SELECT t1.post_title, t2.* FROM wp_posts AS t1 INNER JOIN wp_postmeta AS t2 ON t1.id = t2.post_id WHERE t1.post_type = 'product'")
+		
+		self.cursor.execute("DROP VIEW IF EXISTS product_meta")
+		self.cursor.execute("CREATE VIEW product_meta as SELECT t1.post_title, t4.name as cat_name, t5.* FROM wp_posts AS t1 INNER JOIN wp_term_relationships as t2 ON t1.id = t2.object_id INNER JOIN wp_term_taxonomy as t3 ON t2.term_taxonomy_id = t3.term_taxonomy_id INNER JOIN wp_terms as t4 ON t3.term_id = t4.term_id INNER JOIN wp_postmeta as t5 ON t1.id = t5.post_id WHERE t1.post_type = 'product' AND t3.taxonomy = 'product_cat'")
+
+		#	self.cursor.execute("CREATE VIEW product_meta as SELECT t1.post_title, t2.* FROM wp_posts AS t1 INNER JOIN wp_postmeta AS t2 ON t1.id = t2.post_id WHERE t1.post_type = 'product'")
+
 
 ###NOTE: check that data is not null. If data == empty set, errors will happen and my life will be sad.
 
@@ -99,15 +109,95 @@ class ProductDataSet:
 
 	#####INSERT
 	###Add params
-	def insert_product(self, title, content):
-		sql = "INSERT INTO " + self.posts + " (post_title, post_content, post_date, post_date_gmt, post_modified, post_modified_gmt, post_excerpt, to_ping, pinged, post_content_filtered, post_type) VALUES (" + "\'" + title + "\'" + ", " + "\'" + content + "\'" + ", NOW(), NOW(), NOW(), NOW(), '', '', '', '', 'product')" 
-		self.cursor.execute(sql)
+	def insert_product(self, title, content, cat_name = None):
+		#insert into post
+		sql_post = "INSERT INTO " + self.posts + " (post_title, post_content, post_date, post_date_gmt, post_modified, post_modified_gmt, post_excerpt, to_ping, pinged, post_content_filtered, post_type) VALUES (" + "\'" + title + "\'" + ", " + "\'" + content + "\'" + ", NOW(), NOW(), NOW(), NOW(), '', '', '', '', 'product')" 
+		self.cursor.execute(sql_post)
+
+		#get inserted_prod_id
+		sql_inserted_prod_id = "SELECT LAST_INSERT_ID()"
+		self.cursor.execute(sql_inserted_prod_id)
+		inserted_prod_id = self.cursor.fetchone()[0]
+
+		#insert into term_relationships that term_taxonomy_id = 2 (stands for simple product type. This is an assumption that all product types inserted are simple.)
+		sql_term_relationships_2 = "INSERT INTO " + self.term_relationships + " (object_id, term_taxonomy_id) VALUES (" + str(inserted_prod_id) + ", 2)"
+		self.cursor.execute(sql_term_relationships_2)
+
+		#insert into term_relationships that term_taxonomy_id = category and its parent groups.
+		cat_term_taxonomy_id = None
+		if cat_name != None:
+			sql_cat_term_taxonomy_id = "SELECT t2.term_taxonomy_id FROM " + self.terms + " as t1 INNER JOIN " + self.term_taxonomy + " as t2 ON t1.term_id = t2.term_id where t1.name = " + "\'" + cat_name + "\'"
+			self.cursor.execute(sql_cat_term_taxonomy_id)
+			cat_term_taxonomy_id = self.cursor.fetchone()[0]
+
+			#supplies error for the case that a cat name is supplied but couldn't find the id for it;__;
+			if cat_name != None and cat_term_taxonomy_id == None: return "Error: could not find category with given name"
+
+			#TODO: add recursive functionality so this can also be done for parent groups
+			sql_term_relationships_cat = "INSERT INTO " + self.term_relationships + "(object_id, term_taxonomy_id) VALUES (" + str(inserted_prod_id )+ ", " + str(cat_term_taxonomy_id) + ")"
+			self.cursor.execute(sql_term_relationships_cat)
+
 		self.db.commit()
 		#except:
 			#self.db.rollback()
 			#print ("Error: could not insert")
 
+
+	#a very hackish method for inserting productmeta. i think i'll remain separate as a helper method for insert_products. Ideally inserting into post, post_term_relationships, and postmeta should be done all at once, but sometimes people forget. 
+	#TODO: modularize by separating post, post_term_rel, and postmeta ops into separate methods, the call them with insertprod.
+
+	#TODO: make a Product object and set this as one of the main setters? makes sense that a product should have everything in posts + postmeta
+	#default values are values generated by inserting a prod via gui w/o assigning it to a cat
+	def set_productmeta_dict(self, _wp_page_template = "default", _wc_review_count = "0", _wc_rating_count = "a:0:{}", _wc_average_rating = "0", _edit_lock = "", _edit_last = "", _sku = "", _regular_price = "", _sale_price = "", _sale_price_dates_from = "", _sale_price_dates_to = "", total_sales = "0", _tax_status = "taxable", _tax_class = "", _manage_stock = "no", _backorders = "no", _sold_individually = "no", _weight = "", _length = "", _width = "", _height = "", _upsell_ids = "a:0:{}", _crosssell_ids = "a:0:{}", _purchase_note = "", _default_attributes = "a:0:{}", _virtual = "no", _downloadable = "no", _product_image_gallery = "", _download_limit = "-1", _download_expiry = "-1", _stock = None, _stock_status = "instock", _product_version = "3.0.9", _price = ""):
+		return {
+			"_wp_page_template":_wp_page_template, 
+			"_wc_review_count":_wc_review_count, 
+			"_wc_rating_count":_wc_rating_count, 
+			"_wc_average_rating":_wc_average_rating, 
+			"_edit_lock":_edit_lock, 
+			"_edit_last":_edit_last, 
+			"_sku":_sku, 
+			"_regular_price":_regular_price, 
+			"_sale_price":_sale_price, 
+			"_sale_price_dates_from":_sale_price_dates_from, 
+			"_sale_price_dates_to":_sale_price_dates_to, 
+			"_total_sales":_total_sales, 
+			"_tax_status":_tax_status, 
+			"_tax_class":_tax_class, 
+			"_manage_stock":_manage_stock, 
+			"_backorders":_backorders, 
+			"_sold_individually":_sold_individually, 
+			"_weight":_weight, 
+			"_length":_length, 
+			"_width":_width, 
+			"_height":_height, 
+			"_upsell_ids":_upsell_ids, 
+			"_crosssell_ids":_crosssell_ids, 
+			"_purchase_note":_purchase_note, 
+			"_default_attributes":_default_attributes, 
+			"_virtual":_virtual, 
+			"_downloadable":_downloadable, 
+			"_product_image_gallery":_product_image_gallery, 
+			"_download_limit":_download_limit, 
+			"_download_expiry":_download_expiry, 
+			"_stock":_stock, 
+			"_stock_status":_stock_status, 
+			"_product_version":_product_version, 
+			"_price":_price
+			}
+           
+	def insert_product_meta(self, prod_name, meta_dict):
+		sql_prod_id_from_name = "SELECT id from " + self.posts + " where post_title = " + "\'" + prod_name + "\'" + "and post_type = 'product'"
+		self.cursor.execute(sql_prod_id_from_name)
+		prod_id = self.cursor.fetchone()[0]
+
+		for item in meta_dict.items():
+			sql_productmeta_key_value = "INSERT INTO " + self.postmeta + "(post_id, meta_key, meta_value) VALUES (" + str(prod_id) + ", " + "\'" + str(item[0]) + "\'" +  ", " + "\'" + str(item[1]) + "\'" +  ")"
+			self.cursor.execute(sql_productmeta_key_value)
+		self.db.commit()
+
 	######UPDATE
+	#idk if update_product_description works
 	def update_product_description(self, prod_name, description):
 		try:
 			sql = "UPDATE " +  self.posts + " SET post_content = " + "\'" + description + "\'" "where post_title = " + "\'" + prod_name + "\'"
@@ -116,6 +206,8 @@ class ProductDataSet:
 		except:
 			self.db.rollback()
 			print("Error: could not update")
+
+	
 
 	###DELETE
 	#condition is where, group by, etc.
@@ -223,9 +315,8 @@ class ProductDataSet:
 
 	#------------------------------------------------------
 	###wp_postmeta
-	#uses created table product_meta. There is only one product_meta table, so I don't need to make a self.product meta/concat into string.
+	#uses created view product_meta. There is only one product_meta table, so I don't need to make a self.product meta/concat into string.
 
-	##uhh need to be able to insert shit
 	#17
 	###What is the length of the prod(s) p?
 	def find_prod_length(self, p):
@@ -236,34 +327,47 @@ class ProductDataSet:
 
 	#18
 	#longest/smallest length prod in cat/store
-	#AHHHSDFKLD ALSO HAVE TO INNER JOIN WITH wp_term_relationships and wp_term_taxonomy
-	#draw this out next time
-	'''def find_extrema_length(extrema, group = "store", c):
-		if group == "store": 
-			sql = "SELECT post_title, meta_value FROM wp_postmeta WHERE meta_key = '_length'"
-		else: 
-			sql = "SELECT post_title, meta_value FROM wp_postmeta WHERE meta_key = '_length' AND "
+	def find_extrema_length(self, extrema = "max", group = "store"):
+		sql = "SELECT distinct post_title, meta_value FROM product_meta WHERE meta_key = '_length'"
+		
+		if group != "store":
+			try:  
+				sql += " AND cat_name = " + "\'" + group + "\'"
+			except: return "Error: not concatenating AND clause"
+		
+		self.cursor.execute(sql)
+		data = self.cursor.fetchall()
+		
+		has_len_value = False	
+		for row in data:
+			data_dict = {row[0]: row[1]} 
+			if not has_len_value:	#if there exists a len value, and has_len_value is False, set it to True
+				if row[1] != '' and row[1] != None: has_len_value = True
+
+		if has_len_value:	#if there exists a len value, eval extrema
+			if extrema == "max": return max(data_dict, key=data_dict.get)
+			else: return min(data_dict, key=data_dict.get)
+		else: return "Can't compare: check that you have length values"	#else don't bother
+
+	#19
+	#order prods based on length asc/desc
+	def order_prods_by_length(self, order = "asc"):
+		sql = "SELECT post_title, meta_value from product_meta where meta_key = '_length' ORDER BY meta_value"
+		if order.lower() == "desc":
+			sql += " DESC"
 
 		self.cursor.execute(sql)
 		data = self.cursor.fetchall()
-		for row in data:
-			data_dict = {row[0]: row[1]} 
-		#if data_dict has int values
-		if extrema == "max":breturn max(data_dict, key=data_dict.get)
-		else: return min(data_dict, key=data_dict.get)'''
-	#not sure if this is correct
-	#it's pseudocode anyway
+
+		return data
+
+
 
 	#list all prods in cat/store in a certain range	
 	'''def find_prod_in_range(min, max):
 		SELECT post_id, meta_key, meta_value from wp_postmeta where meta_key = '_length' and meta_value >= min and meta_value <= max'''
 
-	#separated asc/desc for now
-	#order prods based on length asc
-	#SELECT post_id, meta_key, meta_value from wp_postmeta where meta_kkey = '_length' ORDER BY meta_value
 
-	#order prods based on length desc
-	#SELECT post_id, meta_key, meta_value from wp_postmeta where meta_kkey = '_length' ORDER BY meta_value DESC
 
 	#THESE ARE BASICALLY THE SAME AS LENGTH. MAKE SURE LENGTH WORKS BEFORE PROCEEDING.
 	#what is the width	
