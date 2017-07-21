@@ -5,6 +5,7 @@
 #make into class called Dataset? I need to think whether I want to do that kind of structure.
 
 import MySQLdb
+from Category import Category
 
 class CategoryDataSet:
 	#def __init__(self, tbl_header):
@@ -95,18 +96,33 @@ class CategoryDataSet:
 	#####INSERT
 	###Add params
 	#example for insert_category
-	def insert_product(self, title, content):
-		sql = "INSERT INTO " + self.posts + " (post_title, post_content, post_date, post_date_gmt, post_modified, post_modified_gmt, post_excerpt, to_ping, pinged, post_content_filtered, post_type) VALUES (" + "\'" + title + "\'" + ", " + "\'" + content + "\'" + ", NOW(), NOW(), NOW(), NOW(), '', '', '', '', 'product')" 
-		self.cursor.execute(sql)
-		self.db.commit()
 
-	def insert_category(self, name, description, parent = 0):
+	'''def insert_category(self, name, description, parent = 0):
 		sql_term = "INSERT INTO " + self.terms + " (name, slug) VALUES (" + "\'" + name + "\'" + ", " + "\'" + name.lower() + "\'" + ")"
 		self.cursor.execute(sql_term)
 
 		sql_term_taxonomy = "INSERT INTO " + self.term_taxonomy + " (term_id, taxonomy, description, parent)" + "VALUES (LAST_INSERT_ID(), 'product_cat', " + "\'" + description + "\'" + ", " + str(parent) + ")"
 		self.cursor.execute(sql_term_taxonomy)
+		self.db.commit()'''
+
+	def insert_category(self, c):
+		#insert into terms
+		sql_term = "INSERT INTO " + self.terms + " (name, slug) VALUES (" + "\'" + c.get_name() + "\'" + ", " + "\'" + c.get_name().lower() + "\'" + ")"
+		self.cursor.execute(sql_term)
+
+		#get term_id
+		parent_termid = 0
+		if c.get_parent_category() != None:
+			sql_get_parent_termid_from_name = "SELECT term_id from " + self.terms + " where name = " + "\'" + c.get_parent_category().get_name() + "\'"
+			self.cursor.execute(sql_get_parent_termid_from_name)
+			parent_termid = self.cursor.fetchone()[0]
+
+		#insert into term_taxonomy
+		sql_term_taxonomy = "INSERT INTO " + self.term_taxonomy + " (term_id, taxonomy, description, parent)" + "VALUES (LAST_INSERT_ID(), 'product_cat', " + "\'" + c.get_description() + "\'" + ", " + str(parent_termid) + ")"
+		self.cursor.execute(sql_term_taxonomy)
 		self.db.commit()
+
+
 	######UPDATE
 	'''def update_product_description(self, prod_name, description):
 		try:

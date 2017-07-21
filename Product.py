@@ -3,6 +3,7 @@ class Product:
 
 	title=""
 	content=""
+	parent_category=None
 
 	wp_page_template=""
 	wc_review_count=""
@@ -39,10 +40,51 @@ class Product:
 	product_version="" 
 	price=""
 
-	def __init__(self, title, content, _wp_page_template = "default", _wc_review_count = "0", _wc_rating_count = "a:0:{}", _wc_average_rating = "0", _edit_lock = "", _edit_last = "", _sku = "", _regular_price = "", _sale_price = "", _sale_price_dates_from = "", _sale_price_dates_to = "", total_sales = "0", _tax_status = "taxable", _tax_class = "", _manage_stock = "no", _backorders = "no", _sold_individually = "no", _weight = "", _length = "", _width = "", _height = "", _upsell_ids = "a:0:{}", _crosssell_ids = "a:0:{}", _purchase_note = "", _default_attributes = "a:0:{}", _virtual = "no", _downloadable = "no", _product_image_gallery = "", _download_limit = "-1", _download_expiry = "-1", _stock = None, _stock_status = "instock", _product_version = "3.0.9", _price = ""):
+	def __init__(self, title, content, parent_category):
+		self.title = title
+		self.content = content
+		self.parent_category = parent_category
+
+		self.wp_page_template = _wp_page_template
+		self.wc_review_count = _wc_review_count
+		self.wc_rating_count = _wc_rating_count 
+		self.wc_average_rating = _wc_average_rating 
+		self.edit_lock = _edit_lock
+		self.edit_last = _edit_last 
+		self.sku = _sku
+		self.regular_price = _regular_price 
+		self.sale_price = ""
+		self.sale_price_dates_from = "" 
+		self.sale_price_dates_to = ""
+		self.total_sales = "0"
+		self.tax_status = "taxable"
+		self.tax_class = "" 
+		self.manage_stock = "no" 
+		self.backorders = "no"
+		self.sold_individually = "no" 
+		self.weight = ""
+		self.length = "" 
+		self.width = ""
+		self.height = "" 
+		self.upsell_ids = "a:0:{}"
+		self.crosssell_ids = "a:0:{}"
+		self.purchase_note = ""
+		self.default_attributes = "a:0:{}"
+		self.virtual = "no"
+		self.downloadable = "no" 
+		self.product_image_gallery = "" 
+		self.download_limit = "-1"
+		self.download_expiry = "-1" 
+		self.stock = None
+		self.stock_status = "instock"
+		self.product_version = "3.0.9"
+		self.price = ""
+
+	def __init__(self, title, content, parent_category, _wp_page_template = "default", _wc_review_count = "0", _wc_rating_count = "a:0:{}", _wc_average_rating = "0", _edit_lock = "", _edit_last = "", _sku = "", _regular_price = "", _sale_price = "", _sale_price_dates_from = "", _sale_price_dates_to = "", _total_sales = "0", _tax_status = "taxable", _tax_class = "", _manage_stock = "no", _backorders = "no", _sold_individually = "no", _weight = "", _length = "", _width = "", _height = "", _upsell_ids = "a:0:{}", _crosssell_ids = "a:0:{}", _purchase_note = "", _default_attributes = "a:0:{}", _virtual = "no", _downloadable = "no", _product_image_gallery = "", _download_limit = "-1", _download_expiry = "-1", _stock = None, _stock_status = "instock", _product_version = "3.0.9", _price = ""):
 		
 		self.title = title
 		self.content = content
+		self.parent_category = parent_category
 
 		self.wp_page_template = _wp_page_template
 		self.wc_review_count = _wc_review_count
@@ -86,10 +128,16 @@ class Product:
 		return self.title
 
 	def set_content(self, _content):
-		self.content = content
+		self.content = _content
 
 	def get_content(self):
 		return self.content
+
+	def set_parent_category(self, _category):
+		self.parent_category = _category
+
+	def get_parent_category(self):
+		return self.parent_category
 
 	def set_wp_page_template(self, _wp_page_template):
 		self.wp_page_template = _wp_page_template
@@ -294,3 +342,43 @@ class Product:
 
 	def get_price(self):
 		return self.price
+
+	def get_prod_meta_dict(self):
+		return {"_wp_page_template":self.wp_page_template, 
+			"_wc_review_count":self.wc_review_count, 
+			"_wc_rating_count":self.wc_rating_count, 
+			"_wc_average_rating":self.wc_average_rating, 
+			"_edit_lock":self.edit_lock, 
+			"_edit_last":self.edit_last, 
+			"_sku":self.sku, 
+			"_regular_price":self.regular_price, 
+			"_sale_price":self.sale_price, 
+			"_sale_price_dates_from":self.sale_price_dates_from, 
+			"_sale_price_dates_to":self.sale_price_dates_to, 
+			"_total_sales":self.total_sales, 
+			"_tax_status":self.tax_status, 
+			"_tax_class":self.tax_class, 
+			"_manage_stock":self.manage_stock, 
+			"_backorders":self.backorders, 
+			"_sold_individually":self.sold_individually, 
+			"_weight":self.weight, 
+			"_length":self.length, 
+			"_width":self.width, 
+			"_height":self.height, 
+			"_upsell_ids":self.upsell_ids, 
+			"_crosssell_ids":self.crosssell_ids, 
+			"_purchase_note":self.purchase_note, 
+			"_default_attributes":self.default_attributes, 
+			"_virtual":self.virtual, 
+			"_downloadable":self.downloadable, 
+			"_product_image_gallery":self.product_image_gallery, 
+			"_download_limit":self.download_limit, 
+			"_download_expiry":self.download_expiry, 
+			"_stock":self.stock, 
+			"_stock_status":self.stock_status, 
+			"_product_version":self.product_version, 
+			"_price":self.price
+			}
+
+	def has_parent_category(self):
+		return True if self.parent_category != None else False

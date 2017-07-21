@@ -5,6 +5,8 @@
 #I'm making the language python. Make sure this works in python for wp_terms and wp_term_taxonomy.
 
 import MySQLdb
+from Product import Product
+from Category import Category
 
 
 #Specify data tables wanted. Regardless of the name of the site, the directories are numbered _2, _3, etc... so if we had some way of mapping the numbers to the site we wanted, then we could use the numbers to specify tables.
@@ -109,7 +111,7 @@ class ProductDataSet:
 
 	#####INSERT
 	###Add params
-	def insert_product(self, title, content, cat_name = None):
+	'''def insert_product(self, title, content, cat_name = None):
 		#insert into post
 		sql_post = "INSERT INTO " + self.posts + " (post_title, post_content, post_date, post_date_gmt, post_modified, post_modified_gmt, post_excerpt, to_ping, pinged, post_content_filtered, post_type) VALUES (" + "\'" + title + "\'" + ", " + "\'" + content + "\'" + ", NOW(), NOW(), NOW(), NOW(), '', '', '', '', 'product')" 
 		self.cursor.execute(sql_post)
@@ -130,7 +132,7 @@ class ProductDataSet:
 			self.cursor.execute(sql_cat_term_taxonomy_id)
 			cat_term_taxonomy_id = self.cursor.fetchone()[0]
 
-			#supplies error for the case that a cat name is supplied but couldn't find the id for it;__;
+			#supplies error for the case that a cat name is given but couldn't find the term taxonomy id for it;__;
 			if cat_name != None and cat_term_taxonomy_id == None: return "Error: could not find category with given name"
 
 			#TODO: add recursive functionality so this can also be done for parent groups
@@ -140,7 +142,69 @@ class ProductDataSet:
 		self.db.commit()
 		#except:
 			#self.db.rollback()
+			#print ("Error: could not insert")'''
+
+	def insert_product(self, p):
+		#insert into post
+		sql_post = "INSERT INTO " + self.posts + " (post_title, post_content, post_date, post_date_gmt, post_modified, post_modified_gmt, post_excerpt, to_ping, pinged, post_content_filtered, post_type) VALUES (" + "\'" + p.get_title() + "\'" + ", " + "\'" + p.get_content() + "\'" + ", NOW(), NOW(), NOW(), NOW(), '', '', '', '', 'product')" 
+		self.cursor.execute(sql_post)
+
+		#get inserted_prod_id
+		sql_inserted_prod_id = "SELECT LAST_INSERT_ID()"
+		self.cursor.execute(sql_inserted_prod_id)
+		inserted_prod_id = self.cursor.fetchone()[0]
+
+		#insert into term_relationships that term_taxonomy_id = 2 (stands for simple product type. This is an assumption that all product types inserted are simple.)
+		sql_term_relationships_2 = "INSERT INTO " + self.term_relationships + " (object_id, term_taxonomy_id) VALUES (" + str(inserted_prod_id) + ", 2)"
+		self.cursor.execute(sql_term_relationships_2)
+
+		#insert into term_relationships that term_taxonomy_id = category and its parent groups.
+		cat_term_taxonomy_id = None
+		has_parent_category = p.has_parent_category()
+		child = p
+
+		while has_parent_category:
+			print(child)
+			parent_category = child.get_parent_category() #category object
+			print(parent_category)
+
+			#fetch term_taxonomy_id
+			sql_cat_term_taxonomy_id = "SELECT t2.term_taxonomy_id FROM " + self.terms + " as t1 INNER JOIN " + self.term_taxonomy + " as t2 ON t1.term_id = t2.term_id where t1.name = " + "\'" + parent_category.get_name() + "\'"
+			self.cursor.execute(sql_cat_term_taxonomy_id)
+			cat_term_taxonomy_id = self.cursor.fetchone()[0]
+			print(str(cat_term_taxonomy_id))
+
+			#throws error for the case that a cat name is given but couldn't find the term taxonomy id for it;__;
+			if p.has_parent_category() and cat_term_taxonomy_id == None: return "Error: could not find category with given name"
+
+			#insert product-cat relationship in term_relationships
+			sql_term_relationships_cat = "INSERT INTO " + self.term_relationships + "(object_id, term_taxonomy_id) VALUES (" + str(inserted_prod_id )+ ", " + str(cat_term_taxonomy_id) + ")"
+			print(sql_term_relationships_cat)
+			self.cursor.execute(sql_term_relationships_cat)
+
+			#fetch count from term_taxonomy, increment by 1, and update term_taxonomy for every relation prod-cat relationship made
+			sql_get_count = "SELECT count FROM " + self.term_taxonomy + " where term_taxonomy_id = "  + str(cat_term_taxonomy_id) 
+			self.cursor.execute(sql_get_count)
+			count = self.cursor.fetchone()[0]
+			count = count + 1
+			sql_update_count = "UPDATE " + self.term_taxonomy + " SET count = " + str(count) + " WHERE term_taxonomy_id = " + str(cat_term_taxonomy_id) 
+			self.cursor.execute(sql_update_count)
+
+			#if type = Product remove type
+			if type(child) == type(p): child = None
+			
+			child = parent_category #product 1st time, but category afterwards
+			has_parent_category = child.has_parent_category() 
+
+
+		#insert productmeta
+		self.insert_product_meta(p)
+
+		self.db.commit()
+		#except:
+			#self.db.rollback()
 			#print ("Error: could not insert")
+
 
 
 	#a very hackish method for inserting productmeta. i think i'll remain separate as a helper method for insert_products. Ideally inserting into post, post_term_relationships, and postmeta should be done all at once, but sometimes people forget. 
@@ -148,7 +212,7 @@ class ProductDataSet:
 
 	#TODO: make a Product object and set this as one of the main setters? makes sense that a product should have everything in posts + postmeta
 	#default values are values generated by inserting a prod via gui w/o assigning it to a cat
-	def set_productmeta_dict(self, _wp_page_template = "default", _wc_review_count = "0", _wc_rating_count = "a:0:{}", _wc_average_rating = "0", _edit_lock = "", _edit_last = "", _sku = "", _regular_price = "", _sale_price = "", _sale_price_dates_from = "", _sale_price_dates_to = "", total_sales = "0", _tax_status = "taxable", _tax_class = "", _manage_stock = "no", _backorders = "no", _sold_individually = "no", _weight = "", _length = "", _width = "", _height = "", _upsell_ids = "a:0:{}", _crosssell_ids = "a:0:{}", _purchase_note = "", _default_attributes = "a:0:{}", _virtual = "no", _downloadable = "no", _product_image_gallery = "", _download_limit = "-1", _download_expiry = "-1", _stock = None, _stock_status = "instock", _product_version = "3.0.9", _price = ""):
+	'''def set_productmeta_dict(self, _wp_page_template = "default", _wc_review_count = "0", _wc_rating_count = "a:0:{}", _wc_average_rating = "0", _edit_lock = "", _edit_last = "", _sku = "", _regular_price = "", _sale_price = "", _sale_price_dates_from = "", _sale_price_dates_to = "", total_sales = "0", _tax_status = "taxable", _tax_class = "", _manage_stock = "no", _backorders = "no", _sold_individually = "no", _weight = "", _length = "", _width = "", _height = "", _upsell_ids = "a:0:{}", _crosssell_ids = "a:0:{}", _purchase_note = "", _default_attributes = "a:0:{}", _virtual = "no", _downloadable = "no", _product_image_gallery = "", _download_limit = "-1", _download_expiry = "-1", _stock = None, _stock_status = "instock", _product_version = "3.0.9", _price = ""):
 		return {
 			"_wp_page_template":_wp_page_template, 
 			"_wc_review_count":_wc_review_count, 
@@ -184,14 +248,24 @@ class ProductDataSet:
 			"_stock_status":_stock_status, 
 			"_product_version":_product_version, 
 			"_price":_price
-			}
+			}'''
            
-	def insert_product_meta(self, prod_name, meta_dict):
+	'''def insert_product_meta(self, prod_name, meta_dict):
 		sql_prod_id_from_name = "SELECT id from " + self.posts + " where post_title = " + "\'" + prod_name + "\'" + "and post_type = 'product'"
 		self.cursor.execute(sql_prod_id_from_name)
 		prod_id = self.cursor.fetchone()[0]
 
 		for item in meta_dict.items():
+			sql_productmeta_key_value = "INSERT INTO " + self.postmeta + "(post_id, meta_key, meta_value) VALUES (" + str(prod_id) + ", " + "\'" + str(item[0]) + "\'" +  ", " + "\'" + str(item[1]) + "\'" +  ")"
+			self.cursor.execute(sql_productmeta_key_value)
+		self.db.commit()'''
+
+	def insert_product_meta(self, p):
+		sql_prod_id_from_name = "SELECT id from " + self.posts + " where post_title = " + "\'" + p.get_title() + "\'" + "and post_type = 'product'"
+		self.cursor.execute(sql_prod_id_from_name)
+		prod_id = self.cursor.fetchone()[0]
+
+		for item in p.get_prod_meta_dict().items():
 			sql_productmeta_key_value = "INSERT INTO " + self.postmeta + "(post_id, meta_key, meta_value) VALUES (" + str(prod_id) + ", " + "\'" + str(item[0]) + "\'" +  ", " + "\'" + str(item[1]) + "\'" +  ")"
 			self.cursor.execute(sql_productmeta_key_value)
 		self.db.commit()
