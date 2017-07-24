@@ -2,16 +2,10 @@
 
 #SOME NOTES ABOUT STRUCTURING:
 #I may want to separate into py files for separate dbs. It's hard keeping everything together.
-#I'm making the language python. Make sure this works in python for wp_terms and wp_term_taxonomy.
 
 import MySQLdb
 from Product import Product
 from Category import Category
-
-
-#Specify data tables wanted. Regardless of the name of the site, the directories are numbered _2, _3, etc... so if we had some way of mapping the numbers to the site we wanted, then we could use the numbers to specify tables.
-
-#make into class called Dataset? I need to think whether I want to do that kind of structure.
 
 class ProductDataSet:
 	#def __init__(self, tbl_header):
@@ -49,36 +43,39 @@ class ProductDataSet:
 		self.usermeta = self.tbl_header + "_usermeta"
 		self.users = self.tbl_header + "_users"
 
+		self.product_cat = self.tbl_header + "_product_cat"
+		self.product_meta = self.tbl_header + "_product_meta"
 
 		self.db = MySQLdb.connect(host = 'localhost',
                      user = 'root',
                      passwd = 'Chiaroscuro2',
                      db = 'urop_summer_2017'
-    	)
-
-		#creating a Cursor object
+                     )
 		self.cursor = self.db.cursor()
 
 		#Preprocessing
-		#Deleting product-cat if exists, creating a table from inner join and populating it with info
+		#Deleting product_cat if exists, creating a view from inner join and populating it with info
 		
-		#self.cursor.execute("DROP TABLE IF EXISTS product_cat")
-		#self.cursor.execute("CREATE TABLE product_cat as SELECT wp_term_taxonomy.term_id, wp_term_taxonomy.term_taxonomy_id, wp_terms.name,  wp_term_taxonomy.taxonomy, wp_term_taxonomy.description, wp_term_taxonomy.parent, wp_term_taxonomy.count FROM wp_terms INNER JOIN wp_term_taxonomy ON wp_terms.term_id = wp_term_taxonomy.term_id WHERE wp_term_taxonomy.taxonomy = 'product_cat'")
-		self.cursor.execute("DROP VIEW IF EXISTS product_cat")
-		self.cursor.execute("CREATE VIEW product_cat as SELECT wp_term_taxonomy.term_id, wp_term_taxonomy.term_taxonomy_id, wp_terms.name,  wp_term_taxonomy.taxonomy, wp_term_taxonomy.description, wp_term_taxonomy.parent, wp_term_taxonomy.count FROM wp_terms INNER JOIN wp_term_taxonomy ON wp_terms.term_id = wp_term_taxonomy.term_id WHERE wp_term_taxonomy.taxonomy = 'product_cat'")
+		#self.cursor.execute("DROP VIEW IF EXISTS product_cat")
+		#self.cursor.execute("CREATE VIEW product_cat as SELECT wp_term_taxonomy.term_id, wp_term_taxonomy.term_taxonomy_id, wp_terms.name,  wp_term_taxonomy.taxonomy, wp_term_taxonomy.description, wp_term_taxonomy.parent, wp_term_taxonomy.count FROM wp_terms INNER JOIN wp_term_taxonomy ON wp_terms.term_id = wp_term_taxonomy.term_id WHERE wp_term_taxonomy.taxonomy = 'product_cat'")
+
+		sql_drop_productcat = "DROP VIEW IF EXISTS %s" % self.product_cat
+		sql_create_productcat = "CREATE VIEW %s as SELECT t2.term_id, t2.term_taxonomy_id, t1.name,  t2.taxonomy, t2.description, t2.parent, t2.count FROM %s t1 INNER JOIN %s t2 ON t1.term_id = t2.term_id WHERE t2.taxonomy = 'product_cat'" % (self.product_cat, self.terms, self.term_taxonomy)
+		
+		self.cursor.execute(sql_drop_productcat)
+		self.cursor.execute(sql_create_productcat)
 
 		#couldn't inner join both tables because error is thrown w/ post_date. I've joined post_title to post_meta as a hack, but I need to fix this to connect both tables fully together.
 		
-		#self.cursor.execute("DROP TABLE IF EXISTS product_meta")
-		#self.cursor.execute("CREATE TABLE product_meta as SELECT t1.post_title, t2.* FROM wp_posts AS t1 INNER JOIN wp_postmeta AS t2 ON t1.id = t2.post_id WHERE t1.post_type = 'product'")
+		#self.cursor.execute("DROP VIEW IF EXISTS product_meta")
+		#self.cursor.execute("CREATE VIEW product_meta as SELECT t1.post_title, t2.* FROM wp_posts AS t1 INNER JOIN wp_postmeta AS t2 ON t1.id = t2.post_id WHERE t1.post_type = 'product'")
+		sql_drop_productmeta = "DROP VIEW IF EXISTS %s" % self.product_meta
+		sql_create_productmeta = "CREATE VIEW %s as SELECT t1.post_title, t2.* FROM %s AS t1 INNER JOIN %s AS t2 ON t1.id = t2.post_id WHERE t1.post_type = 'product'" % (self.product_meta, self.posts, self.postmeta)
 		
-		self.cursor.execute("DROP VIEW IF EXISTS product_meta")
-		self.cursor.execute("CREATE VIEW product_meta as SELECT t1.post_title, t4.name as cat_name, t5.* FROM wp_posts AS t1 INNER JOIN wp_term_relationships as t2 ON t1.id = t2.object_id INNER JOIN wp_term_taxonomy as t3 ON t2.term_taxonomy_id = t3.term_taxonomy_id INNER JOIN wp_terms as t4 ON t3.term_id = t4.term_id INNER JOIN wp_postmeta as t5 ON t1.id = t5.post_id WHERE t1.post_type = 'product' AND t3.taxonomy = 'product_cat'")
+		self.cursor.execute(sql_drop_productmeta)
+		self.cursor.execute(sql_create_productmeta)
 
-		#	self.cursor.execute("CREATE VIEW product_meta as SELECT t1.post_title, t2.* FROM wp_posts AS t1 INNER JOIN wp_postmeta AS t2 ON t1.id = t2.post_id WHERE t1.post_type = 'product'")
-
-
-###NOTE: check that data is not null. If data == empty set, errors will happen and my life will be sad.
+		###NOTE: check that data is not null. If data == empty set, errors will happen and my life will be sad.
 
 	def getCursor(self):
 		return self.cursor
@@ -164,22 +161,18 @@ class ProductDataSet:
 		child = p
 
 		while has_parent_category:
-			print(child)
 			parent_category = child.get_parent_category() #category object
-			print(parent_category)
 
 			#fetch term_taxonomy_id
 			sql_cat_term_taxonomy_id = "SELECT t2.term_taxonomy_id FROM " + self.terms + " as t1 INNER JOIN " + self.term_taxonomy + " as t2 ON t1.term_id = t2.term_id where t1.name = " + "\'" + parent_category.get_name() + "\'"
 			self.cursor.execute(sql_cat_term_taxonomy_id)
 			cat_term_taxonomy_id = self.cursor.fetchone()[0]
-			print(str(cat_term_taxonomy_id))
 
 			#throws error for the case that a cat name is given but couldn't find the term taxonomy id for it;__;
 			if p.has_parent_category() and cat_term_taxonomy_id == None: return "Error: could not find category with given name"
 
 			#insert product-cat relationship in term_relationships
 			sql_term_relationships_cat = "INSERT INTO " + self.term_relationships + "(object_id, term_taxonomy_id) VALUES (" + str(inserted_prod_id )+ ", " + str(cat_term_taxonomy_id) + ")"
-			print(sql_term_relationships_cat)
 			self.cursor.execute(sql_term_relationships_cat)
 
 			#fetch count from term_taxonomy, increment by 1, and update term_taxonomy for every relation prod-cat relationship made

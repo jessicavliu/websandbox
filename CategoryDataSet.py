@@ -24,6 +24,8 @@ class CategoryDataSet:
 	usermeta = ""
 	users = ""
 
+	product_cat = ""
+
 	db = None
 	cursor = None
 
@@ -43,6 +45,9 @@ class CategoryDataSet:
 		self.usermeta = self.tbl_header + "_usermeta"
 		self.users = self.tbl_header + "_users"
 
+		self.product_cat = self.tbl_header + "_product_cat"
+		self.product_meta = self.tbl_header + "_product_meta"
+
 		self.db = MySQLdb.connect(host = 'localhost',
                      user = 'root',
                      passwd = 'Chiaroscuro2',
@@ -51,19 +56,26 @@ class CategoryDataSet:
 		self.cursor = self.db.cursor()
 
 		#Preprocessing
-		#Deleting product-cat if exists, creating a table from inner join and populating it with info
+		#Deleting product_cat if exists, creating a view from inner join and populating it with info
 		
-		#self.cursor.execute("DROP TABLE IF EXISTS product_cat")
-		#self.cursor.execute("CREATE TABLE product_cat as SELECT wp_term_taxonomy.term_id, wp_term_taxonomy.term_taxonomy_id, wp_terms.name,  wp_term_taxonomy.taxonomy, wp_term_taxonomy.description, wp_term_taxonomy.parent, wp_term_taxonomy.count FROM wp_terms INNER JOIN wp_term_taxonomy ON wp_terms.term_id = wp_term_taxonomy.term_id WHERE wp_term_taxonomy.taxonomy = 'product_cat'")
-		self.cursor.execute("DROP VIEW IF EXISTS product_cat")
-		self.cursor.execute("CREATE VIEW product_cat as SELECT wp_term_taxonomy.term_id, wp_term_taxonomy.term_taxonomy_id, wp_terms.name,  wp_term_taxonomy.taxonomy, wp_term_taxonomy.description, wp_term_taxonomy.parent, wp_term_taxonomy.count FROM wp_terms INNER JOIN wp_term_taxonomy ON wp_terms.term_id = wp_term_taxonomy.term_id WHERE wp_term_taxonomy.taxonomy = 'product_cat'")
+		#self.cursor.execute("DROP VIEW IF EXISTS product_cat")
+		#self.cursor.execute("CREATE VIEW product_cat as SELECT wp_term_taxonomy.term_id, wp_term_taxonomy.term_taxonomy_id, wp_terms.name,  wp_term_taxonomy.taxonomy, wp_term_taxonomy.description, wp_term_taxonomy.parent, wp_term_taxonomy.count FROM wp_terms INNER JOIN wp_term_taxonomy ON wp_terms.term_id = wp_term_taxonomy.term_id WHERE wp_term_taxonomy.taxonomy = 'product_cat'")
+
+		sql_drop_productcat = "DROP VIEW IF EXISTS %s" % self.product_cat
+		sql_create_productcat = "CREATE VIEW %s as SELECT t2.term_id, t2.term_taxonomy_id, t1.name,  t2.taxonomy, t2.description, t2.parent, t2.count FROM %s t1 INNER JOIN %s t2 ON t1.term_id = t2.term_id WHERE t2.taxonomy = 'product_cat'" % (self.product_cat, self.terms, self.term_taxonomy)
+		
+		self.cursor.execute(sql_drop_productcat)
+		self.cursor.execute(sql_create_productcat)
 
 		#couldn't inner join both tables because error is thrown w/ post_date. I've joined post_title to post_meta as a hack, but I need to fix this to connect both tables fully together.
 		
-		#self.cursor.execute("DROP TABLE IF EXISTS product_meta")
-		#self.cursor.execute("CREATE TABLE product_meta as SELECT t1.post_title, t2.* FROM wp_posts AS t1 INNER JOIN wp_postmeta AS t2 ON t1.id = t2.post_id WHERE t1.post_type = 'product'")
-		self.cursor.execute("DROP VIEW IF EXISTS product_meta")
-		self.cursor.execute("CREATE VIEW product_meta as SELECT t1.post_title, t2.* FROM wp_posts AS t1 INNER JOIN wp_postmeta AS t2 ON t1.id = t2.post_id WHERE t1.post_type = 'product'")
+		#self.cursor.execute("DROP VIEW IF EXISTS product_meta")
+		#self.cursor.execute("CREATE VIEW product_meta as SELECT t1.post_title, t2.* FROM wp_posts AS t1 INNER JOIN wp_postmeta AS t2 ON t1.id = t2.post_id WHERE t1.post_type = 'product'")
+		sql_drop_productmeta = "DROP VIEW IF EXISTS %s" % self.product_meta
+		sql_create_productmeta = "CREATE VIEW %s as SELECT t1.post_title, t2.* FROM %s AS t1 INNER JOIN %s AS t2 ON t1.id = t2.post_id WHERE t1.post_type = 'product'" % (self.product_meta, self.posts, self.postmeta)
+		
+		self.cursor.execute(sql_drop_productmeta)
+		self.cursor.execute(sql_create_productmeta)
 
 		###NOTE: check that data is not null. If data == empty set, errors will happen and my life will be sad.
 
@@ -123,7 +135,7 @@ class CategoryDataSet:
 		self.db.commit()
 
 
-	######UPDATE
+	#####UPDATE
 	'''def update_product_description(self, prod_name, description):
 		try:
 			sql = "UPDATE wp_posts SET post_content = " + "\'" + description + "\'" "where post_title = " + "\'" + prod_name + "\'"
@@ -134,6 +146,29 @@ class CategoryDataSet:
 			print("Error: could not update")'''
 
 	#insert_product('test2', 'testing test2')
+
+	#####DELETE
+
+	def delete_cat(self, c):
+		#get term_id
+		sql_get_termid = "SELECT term_id FROM %s where name = %s and description = %s" % (self.product_cat, "\'" + c.get_name() + "\'", "\'" + c.get_description() + "\'")
+		self.cursor.execute(sql_get_termid)
+
+		#if there is no matching cat, exit method
+		if self.cursor.fetchone() == None:
+			print("Error: did not find cat in database")
+			return 
+		
+		termid = self.cursor.fetchone()[0]
+		
+		sql_del_from_term = "DELETE FROM %s WHERE term_id = %s" % (self.terms, str(termid))
+		sql_del_from_termtaxonomy = "DELETE FROM %s WHERE term_id = %s" % (self.term_taxonomy, str(termid))
+
+		self.cursor.execute(sql_del_from_term)
+		self.cursor.execute(sql_del_from_termtaxonomy)
+
+		self.db.commit()
+		return
 
 	#####READ
 	###wp_terms and wp_term_taxonomy
