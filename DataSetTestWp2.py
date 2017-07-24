@@ -149,10 +149,22 @@ prod_list_cyan = [p_aqua, p_cyan, p_lightcyan, p_paleturquoise, p_aquamarine, p_
 
 #mass_insert_prods(prod_list_cyan)
 
+###testing delete fns
 #np = no parent. this isn't .006 =__=
 c_del_np = Category("deletable", "deletable, no parent", None)
 c_del_p = Category("deletable", "deletable, has parent", c_pink)
 #catset.insert_category(c_del_np)
 #catset.insert_category(c_del_p)
 #catset.delete_cat(c_del_np)
-catset.delete_cat(c_del_p)
+#catset.delete_cat(c_del_p)
+
+p_del_np = Product("deletable", "deletable, no parent category", None)
+p_del_p = Product("deletable", "deletable, has parent category", c_blue)
+p_del_pp = Product("deletable", "deletable, has 2 parent categories", c_cyan)
+#prodset.insert_product(p_del_np)
+#prodset.insert_product(p_del_p)
+#prodset.insert_product(p_del_pp)
+prodset.delete_product(p_del_np)
+prodset.delete_product(p_del_p)
+prodset.delete_product(p_del_pp)
+

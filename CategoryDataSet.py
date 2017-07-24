@@ -109,14 +109,6 @@ class CategoryDataSet:
 	###Add params
 	#example for insert_category
 
-	'''def insert_category(self, name, description, parent = 0):
-		sql_term = "INSERT INTO " + self.terms + " (name, slug) VALUES (" + "\'" + name + "\'" + ", " + "\'" + name.lower() + "\'" + ")"
-		self.cursor.execute(sql_term)
-
-		sql_term_taxonomy = "INSERT INTO " + self.term_taxonomy + " (term_id, taxonomy, description, parent)" + "VALUES (LAST_INSERT_ID(), 'product_cat', " + "\'" + description + "\'" + ", " + str(parent) + ")"
-		self.cursor.execute(sql_term_taxonomy)
-		self.db.commit()'''
-
 	def insert_category(self, c):
 		#insert into terms
 		sql_term = "INSERT INTO " + self.terms + " (name, slug) VALUES (" + "\'" + c.get_name() + "\'" + ", " + "\'" + c.get_name().lower() + "\'" + ")"
@@ -148,6 +140,7 @@ class CategoryDataSet:
 	#insert_product('test2', 'testing test2')
 
 	#####DELETE
+	#locate cat by matching name, description
 
 	def delete_cat(self, c):
 		#get term_id
@@ -155,11 +148,12 @@ class CategoryDataSet:
 		self.cursor.execute(sql_get_termid)
 
 		#if there is no matching cat, exit method
-		if self.cursor.fetchone() == None:
+		data = self.cursor.fetchone()
+		if data == None:
 			print("Error: did not find cat in database")
 			return 
 		
-		termid = self.cursor.fetchone()[0]
+		termid = data[0]
 		
 		sql_del_from_term = "DELETE FROM %s WHERE term_id = %s" % (self.terms, str(termid))
 		sql_del_from_termtaxonomy = "DELETE FROM %s WHERE term_id = %s" % (self.term_taxonomy, str(termid))
