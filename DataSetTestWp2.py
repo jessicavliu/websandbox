@@ -158,13 +158,21 @@ c_del_p = Category("deletable", "deletable, has parent", c_pink)
 #catset.delete_cat(c_del_np)
 #catset.delete_cat(c_del_p)
 
-p_del_np = Product("deletable", "deletable, no parent category", None)
-p_del_p = Product("deletable", "deletable, has parent category", c_blue)
-p_del_pp = Product("deletable", "deletable, has 2 parent categories", c_cyan)
+#identifier: Product(param1, param2, param3)
+prod_dict = {}
+prod_dict['p_del_np'] = Product("deletable", "deletable, no parent category", None)
+prod_dict['p_del_p'] = Product("deletable", "deletable, has parent category", c_blue)
+prod_dict['p_del_pp'] = Product("deletable", "deletable, has 2 parent categories", c_cyan)
+
+
+for p in prod_dict:
+	#prodset.insert_product(prod_dict[p])
+	#prodset.delete_product(prod_dict[p])
+
 #prodset.insert_product(p_del_np)
 #prodset.insert_product(p_del_p)
 #prodset.insert_product(p_del_pp)
-prodset.delete_product(p_del_np)
-prodset.delete_product(p_del_p)
-prodset.delete_product(p_del_pp)
+#prodset.delete_product(p_del_np)
+#prodset.delete_product(p_del_p)
+#prodset.delete_product(p_del_pp)
 

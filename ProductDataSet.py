@@ -121,12 +121,12 @@ class ProductDataSet:
 		#insert into term_relationships that term_taxonomy_id = 2 (stands for simple product type. This is an assumption that all product types inserted are simple.)
 		sql_term_relationships_2 = "INSERT INTO " + self.term_relationships + " (object_id, term_taxonomy_id) VALUES (" + str(inserted_prod_id) + ", 2)"
 		self.cursor.execute(sql_term_relationships_2)
-		#get count
-		sql_get_count = "SELECT count FROM " + self.term_taxonomy + " where term_taxonomy_id = "  + str(cat_term_taxonomy_id) 
+		#get, update count
+		sql_get_count = "SELECT count FROM " + self.term_taxonomy + " where term_taxonomy_id = 2" 
 		self.cursor.execute(sql_get_count)
 		count = self.cursor.fetchone()[0]
 		count = count + 1
-		sql_update_count = "UPDATE " + self.term_taxonomy + " SET count = " + str(count) + " WHERE term_taxonomy_id = " + str(cat_term_taxonomy_id) 
+		sql_update_count = "UPDATE " + self.term_taxonomy + " SET count = " + str(count) + " WHERE term_taxonomy_id = 2"
 		self.cursor.execute(sql_update_count)
 
 		#insert into term_relationships that term_taxonomy_id = category and its parent groups.
@@ -149,7 +149,7 @@ class ProductDataSet:
 			sql_term_relationships_cat = "INSERT INTO " + self.term_relationships + "(object_id, term_taxonomy_id) VALUES (" + str(inserted_prod_id )+ ", " + str(cat_term_taxonomy_id) + ")"
 			self.cursor.execute(sql_term_relationships_cat)
 
-			#fetch count from term_taxonomy, increment by 1, and update term_taxonomy for every relation prod-cat relationship made
+			#get count, update
 			sql_get_count = "SELECT count FROM " + self.term_taxonomy + " where term_taxonomy_id = "  + str(cat_term_taxonomy_id) 
 			self.cursor.execute(sql_get_count)
 			count = self.cursor.fetchone()[0]
@@ -171,6 +171,10 @@ class ProductDataSet:
 			#self.db.rollback()
 			#print ("Error: could not insert")
 
+	#fetch count from term_taxonomy, increment by 1, and update term_taxonomy for every relation prod-cat relationship made
+	def update_count(self):
+		pass
+
 	def insert_product_meta(self, p):
 		sql_prod_id_from_name = "SELECT id from " + self.posts + " where post_title = " + "\'" + p.get_title() + "\'" + "and post_type = 'product'"
 		self.cursor.execute(sql_prod_id_from_name)
@@ -191,6 +195,10 @@ class ProductDataSet:
 		except:
 			self.db.rollback()
 			print("Error: could not update")
+
+	def update_product_meta(self, p, dict):
+		pass
+
 
 	###DELETE
 	#locate prod by matching title, content
