@@ -363,7 +363,7 @@ class ProductDataSet:
 	#17
 	###What is the length of the prod(s) p?
 	def find_prod_length(self, p):
-		sql = "SELECT post_title, meta_value from product_meta where meta_key = '_length' and post_title = " + "\'" +  p + "\'" 
+		sql = "SELECT post_title, meta_value from %s where meta_key = '_length' and post_title = %s" % (self.product_meta, "\'" +  p + "\'")
 		self.cursor.execute(sql)
 		data = self.cursor.fetchall()
 		return [row[1] for row in data]
@@ -395,12 +395,13 @@ class ProductDataSet:
 	#19
 	#order prods based on length asc/desc
 	def order_prods_by_length(self, order = "asc"):
-		sql = "SELECT post_title, meta_value from product_meta where meta_key = '_length' ORDER BY meta_value"
+		sql = "SELECT post_title, meta_value from %s where meta_key = '_length' ORDER BY meta_value" % (self.product_meta)
 		if order.lower() == "desc":
 			sql += " DESC"
 
 		self.cursor.execute(sql)
 		data = self.cursor.fetchall()
+		
 
 		return data
 

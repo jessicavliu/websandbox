@@ -196,6 +196,25 @@ prod_dict_pink['p_mediumvioletred'] = p_mediumvioletred
 
 len_list = [335, 324, 369, 325, 343, 137]
 active = 0
-for p in prod_dict_pink:
+#for p in prod_dict_pink:
 	#prodset.update_product_meta(prod_dict_pink[p], {"length": len_list[active]})
-	active = active + 1
+	#active = active + 1
+
+#17
+p = 'pink'
+print("What is the length of prod(s) p?")
+print(prodset.find_prod_length(p))
+print()
+
+#18
+extrema = "max"
+group = "Music"
+print("Longest/smallest length prod in cat/store")
+print(prodset.find_extrema_length(extrema, group))
+print()
+
+#19
+print("order prods based on length asc/desc")
+print(prodset.order_prods_by_length("asc"))
+print()
+
