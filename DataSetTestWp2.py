@@ -164,8 +164,7 @@ prod_dict['p_del_np'] = Product("deletable", "deletable, no parent category", No
 prod_dict['p_del_p'] = Product("deletable", "deletable, has parent category", c_blue)
 prod_dict['p_del_pp'] = Product("deletable", "deletable, has 2 parent categories", c_cyan)
 
-
-for p in prod_dict:
+#for p in prod_dict:
 	#prodset.insert_product(prod_dict[p])
 	#prodset.delete_product(prod_dict[p])
 
@@ -176,3 +175,27 @@ for p in prod_dict:
 #prodset.delete_product(p_del_p)
 #prodset.delete_product(p_del_pp)
 
+#---
+#testing set_prod_meta_dict()
+#prod_dict['p_del_np'].set_product_meta_dict({"length":3, "width":2})
+#print(prod_dict['p_del_np'].get_length())
+#print(prod_dict['p_del_np'].get_width())
+
+#testing update_productmeta()
+#prodset.update_product_meta(prod_dict['p_del_np'], {"length":3, "width":2})
+
+#---
+#testing length question fns
+prod_dict_pink = {}
+prod_dict_pink['p_pink'] = p_pink
+prod_dict_pink['p_lightpink'] = p_lightpink
+prod_dict_pink['p_hotpink'] = p_hotpink
+prod_dict_pink['p_deeppink'] = p_deeppink
+prod_dict_pink['p_palevioletred'] = p_palevioletred
+prod_dict_pink['p_mediumvioletred'] = p_mediumvioletred
+
+len_list = [335, 324, 369, 325, 343, 137]
+active = 0
+for p in prod_dict_pink:
+	#prodset.update_product_meta(prod_dict_pink[p], {"length": len_list[active]})
+	active = active + 1

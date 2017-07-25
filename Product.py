@@ -75,7 +75,7 @@ class Product:
 		self.product_image_gallery = "" 
 		self.download_limit = "-1"
 		self.download_expiry = "-1" 
-		self.stock = None
+		self.stock = ""
 		self.stock_status = "instock"
 		self.product_version = "3.0.9"
 		self.price = ""
@@ -342,6 +342,18 @@ class Product:
 
 	def get_price(self):
 		return self.price
+
+	#dict has to be of the form property:value. ex. "length":23
+	def set_product_meta_dict(self, dict):
+		prodmeta_dict = self.get_prod_meta_dict()
+		for d in dict:
+			for meta in prodmeta_dict:
+				if d == meta or d == meta[1::]: #check for an attr match
+					try:
+						getattr(self, "set" + meta) (dict[d]) #set product attribute to new value
+					except:
+						print("Couldn't set " + str(d))
+		return	
 
 	def get_prod_meta_dict(self):
 		return {"_wp_page_template":self.wp_page_template, 

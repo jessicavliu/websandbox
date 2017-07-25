@@ -176,9 +176,15 @@ class ProductDataSet:
 		pass
 
 	def insert_product_meta(self, p):
-		sql_prod_id_from_name = "SELECT id from " + self.posts + " where post_title = " + "\'" + p.get_title() + "\'" + "and post_type = 'product'"
-		self.cursor.execute(sql_prod_id_from_name)
-		prod_id = self.cursor.fetchone()[0]
+		#identifies postid by name and description
+		sql_get_postid = "SELECT id from %s WHERE post_title = %s and post_content = %s and post_type = 'product'" % (self.posts, "\'" + p.get_title() + "\'", "\'" + p.get_content() + "\'")
+		print(sql_get_postid)
+		self.cursor.execute(sql_get_postid)
+		data = self.cursor.fetchone()
+		if data == None:
+			print("Error: nothing found")
+			return
+		prod_id = data[0]
 
 		for item in p.get_prod_meta_dict().items():
 			sql_productmeta_key_value = "INSERT INTO " + self.postmeta + "(post_id, meta_key, meta_value) VALUES (" + str(prod_id) + ", " + "\'" + str(item[0]) + "\'" +  ", " + "\'" + str(item[1]) + "\'" +  ")"
@@ -197,8 +203,23 @@ class ProductDataSet:
 			print("Error: could not update")
 
 	def update_product_meta(self, p, dict):
-		pass
 
+		p.set_product_meta_dict(dict)
+		#getting ids is another piece of code that repeats itself a lot
+		sql_get_postid = "SELECT id from %s WHERE post_title = %s and post_content = %s and post_type = 'product'" % (self.posts, "\'" + p.get_title() + "\'", "\'" + p.get_content() + "\'")
+		self.cursor.execute(sql_get_postid)
+		data = self.cursor.fetchone()
+		if data == None:
+			print("Error: nothing found")
+			return
+		prod_id = data[0] #get post_id
+
+		for item in p.get_prod_meta_dict().items():
+			sql_update_productmeta = "UPDATE %s set meta_value = %s where meta_key = %s and post_id = %s" % (self.postmeta, "\'" + str(item[1]) + "\'", "\'" + str(item[0]) + "\'", str(prod_id))
+			self.cursor.execute(sql_update_productmeta)
+
+		self.db.commit()
+		return
 
 	###DELETE
 	#locate prod by matching title, content
