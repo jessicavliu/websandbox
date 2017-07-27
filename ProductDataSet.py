@@ -178,7 +178,6 @@ class ProductDataSet:
 	def insert_product_meta(self, p):
 		#identifies postid by name and description
 		sql_get_postid = "SELECT id from %s WHERE post_title = %s and post_content = %s and post_type = 'product'" % (self.posts, "\'" + p.get_title() + "\'", "\'" + p.get_content() + "\'")
-		print(sql_get_postid)
 		self.cursor.execute(sql_get_postid)
 		data = self.cursor.fetchone()
 		if data == None:
@@ -401,7 +400,7 @@ class ProductDataSet:
 
 		self.cursor.execute(sql)
 		data = self.cursor.fetchall()
-		
+
 
 		return data
 
