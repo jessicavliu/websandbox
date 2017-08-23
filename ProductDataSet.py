@@ -70,7 +70,9 @@ class ProductDataSet:
 		#self.cursor.execute("DROP VIEW IF EXISTS product_meta")
 		#self.cursor.execute("CREATE VIEW product_meta as SELECT t1.post_title, t2.* FROM wp_posts AS t1 INNER JOIN wp_postmeta AS t2 ON t1.id = t2.post_id WHERE t1.post_type = 'product'")
 		sql_drop_productmeta = "DROP VIEW IF EXISTS %s" % self.product_meta
-		sql_create_productmeta = "CREATE VIEW %s as SELECT t1.post_title, t2.* FROM %s AS t1 INNER JOIN %s AS t2 ON t1.id = t2.post_id WHERE t1.post_type = 'product'" % (self.product_meta, self.posts, self.postmeta)
+		
+		sql_create_productmeta = "CREATE VIEW %s as SELECT t1.post_title, t4.name as cat_name, t5.* FROM %s AS t1 INNER JOIN %s as t2 ON t1.id = t2.object_id INNER JOIN %s as t3 ON t2.term_taxonomy_id = t3.term_taxonomy_id INNER JOIN %s as t4 ON t3.term_id = t4.term_id INNER JOIN %s as t5 ON t1.id = t5.post_id WHERE t1.post_type = 'product' AND t3.taxonomy = 'product_cat'" % (self.product_meta, self.posts, self.term_relationships, self.term_taxonomy, self.terms, self.postmeta)
+		#sql_create_productmeta = "CREATE VIEW %s as SELECT t1.post_title, t2.* FROM %s AS t1 INNER JOIN %s AS t2 ON t1.id = t2.post_id WHERE t1.post_type = 'product'" % (self.product_meta, self.posts, self.postmeta)
 		
 		self.cursor.execute(sql_drop_productmeta)
 		self.cursor.execute(sql_create_productmeta)
@@ -192,17 +194,16 @@ class ProductDataSet:
 
 	######UPDATE
 	#idk if update_product_description works
-	def update_product_description(self, prod_name, description):
+	'''def update_product_description(self, prod_name, description):
 		try:
 			sql = "UPDATE " +  self.posts + " SET post_content = " + "\'" + description + "\'" "where post_title = " + "\'" + prod_name + "\'"
 			self.cursor.execute(sql)
 			self.db.commit()
 		except:
 			self.db.rollback()
-			print("Error: could not update")
+			print("Error: could not update")'''
 
 	def update_product_meta(self, p, dict):
-
 		p.set_product_meta_dict(dict)
 		#getting ids is another piece of code that repeats itself a lot
 		sql_get_postid = "SELECT id from %s WHERE post_title = %s and post_content = %s and post_type = 'product'" % (self.posts, "\'" + p.get_title() + "\'", "\'" + p.get_content() + "\'")
@@ -254,7 +255,11 @@ class ProductDataSet:
 		for i in termtaxonomyid_list:
 			sql_select_count = "select count from %s where term_taxonomy_id = %s" % (self.term_taxonomy, i)
 			self.cursor.execute(sql_select_count)
-			count = self.cursor.fetchone()[0]
+			data = self.cursor.fetchone()
+			if data == None:
+				print("Error: nothing found")
+				return
+			count = data[0] 
 			count = count - 1
 
 			sql_update_count = "update %s set count = %s where term_taxonomy_id = %s" % (self.term_taxonomy, str(count), i)
@@ -270,43 +275,43 @@ class ProductDataSet:
 	###wp_posts
 
 	#10
-	###Given product name p, does p exist?
 	#val returned for non-existant prod is 0
 	#data returns the number of matches returned. 0 == empty set.
 	def exists_prod(self, p):
+		print("Given product name " + p + ", does it exist?")
 		sql = "SELECT * FROM " + self.posts + " where post_type = 'product' and post_title = " + "\'" + p + "\'"
 		self.cursor.execute(sql) 
 		data = self.cursor.fetchall()
 		return True if data != () else False
 
 	#11
-	###List all product names
 	def list_prod_names(self):
+		print("List all product names")
 		sql = "SELECT t1.post_title FROM " + self.posts + " t1 INNER JOIN " + self.term_relationships + " t2 ON t1.id = t2.object_id INNER JOIN " + self.term_taxonomy + " t3 ON t2.term_taxonomy_id = t3.term_taxonomy_id WHERE t3.taxonomy = 'product_cat' GROUP BY t1.id ORDER BY t1.id"
 		self.cursor.execute(sql)
 		data = self.cursor.fetchall()
 		return[row[0] for row in data]
 
 	#12
-	###Return content/description of prod p
 	#May have to resort to sku. I can't differentiate between data with the same name.
 	def get_prod_description(self, p):
+		print("Return description of prod p")
 		sql = "SELECT post_content FROM " + self.posts + " where post_type = 'product' and post_title = " + "\'" + p + "\'"
 		self.cursor.execute(sql)
 		data = self.cursor.fetchone()
 		return data[0] if data != None else None
 
 	#13
-	##Return content/description of all prods with name p
 	def get_prod_descriptions(self, p):
+		print("Return description of all prods with name p")
 		sql = "SELECT post_content FROM " + self.posts + " where post_type = 'product' and post_title = " + "\'" + p + "\'"
 		self.cursor.execute(sql)
 		data = self.cursor.fetchall()
 		return [row[0] for row in data]
 
 	#14
-	###Does content s match the description for any prod?
 	def does_search_match(self, s):
+		print("Does content s exist for any prod?")
 		sql = "SELECT post_title, post_content from " + self.posts + " where post_type = 'product'"
 		self.cursor.execute(sql)
 		data = self.cursor.fetchall()
@@ -315,8 +320,7 @@ class ProductDataSet:
 				if row[1] == s: return True
 		return False
 
-	#14.5
-	###Does content s match the description for a prod(s) named p?
+	#14.5: Does content s match the description for a prod(s) named p?"
 	def does_search_match_prod(self, s, p):
 		sql = "SELECT post_title, post_content FROM " + self.posts + " WHERE post_type = 'product'AND post_title = " + "\'" + p + "\'"
 		self.cursor.execute(sql)
@@ -326,8 +330,8 @@ class ProductDataSet:
 		return False
 
 	#14.75
-	###Does content s match the description for a list of prods p?
 	def does_search_match_list_prods(self, s, p_list):
+		print("Does content s match the description for a list of prods p?")
 		for p in p_list:
 			if self.does_search_match_prod(s, p): return True
 		return False
@@ -336,17 +340,16 @@ class ProductDataSet:
 	#14, 14.5, 14.75 but with substrings
 
 	#15
-	###Return instances where search s is description for a prod
 	def find_match(self, s):
+		print("Return instances where string s is content for a prod")
 		sql = "SELECT post_title from " + self.posts  + " where post_type = 'product' and post_content = " + "\'" + s + "\'"
 		self.cursor.execute(sql)
 		data = self.cursor.fetchall()
 		return [row[0] for row in data]
 
 	#16
-	###Return instances where string c is a substring for content for a prod
-	#not sure what data structure the queries go in.
 	def find_substring_match(self, s):
+		print("Return instances where string c is a substring for content for a prod")
 		sql = "SELECT post_title, post_content from " + self.posts + " where post_type = 'product'"
 		self.cursor.execute(sql)
 		data = self.cursor.fetchall()
@@ -360,19 +363,19 @@ class ProductDataSet:
 	#uses created view product_meta. There is only one product_meta table, so I don't need to make a self.product meta/concat into string.
 
 	#17
-	###What is the length of the prod(s) p?
 	def find_prod_length(self, p):
+		print("What is the length of prod(s) p?")
 		sql = "SELECT post_title, meta_value from %s where meta_key = '_length' and post_title = %s" % (self.product_meta, "\'" +  p + "\'")
 		self.cursor.execute(sql)
 		data = self.cursor.fetchall()
 		return [row[1] for row in data]
 
 	#18
-	#longest/smallest length prod in cat/store
 	def find_extrema_length(self, extrema = "max", group = "store"):
-		sql = "SELECT distinct post_title, meta_value FROM product_meta WHERE meta_key = '_length'"
-		
-		if group != "store":
+		print("Product with longest/smallest length prod in cat/store")
+		sql = "SELECT distinct post_title, meta_value FROM %s WHERE meta_key = '_length'" % self.product_meta
+
+		if group != "store": #modify query to look in category
 			try:  
 				sql += " AND cat_name = " + "\'" + group + "\'"
 			except: return "Error: not concatenating AND clause"
@@ -380,37 +383,91 @@ class ProductDataSet:
 		self.cursor.execute(sql)
 		data = self.cursor.fetchall()
 		
-		has_len_value = False	
+		data_dict = {}
 		for row in data:
-			data_dict = {row[0]: row[1]} 
-			if not has_len_value:	#if there exists a len value, and has_len_value is False, set it to True
-				if row[1] != '' and row[1] != None: has_len_value = True
+			if row[1] != '' and row[1] != None: 
+				data_dict[row[0]]= int(row[1]) 
+			else: 
+				data_dict[row[0]]= 0
 
-		if has_len_value:	#if there exists a len value, eval extrema
-			if extrema == "max": return max(data_dict, key=data_dict.get)
-			else: return min(data_dict, key=data_dict.get)
+		if extrema == "max": return str(max(data_dict, key=data_dict.get)) 
+		elif extrema == "min": return str(min(data_dict, key=data_dict.get)) 
 		else: return "Can't compare: check that you have length values"	#else don't bother
 
 	#19
-	#order prods based on length asc/desc
 	def order_prods_by_length(self, order = "asc"):
-		sql = "SELECT post_title, meta_value from %s where meta_key = '_length' ORDER BY meta_value" % (self.product_meta)
+		print("order prods based on length asc/desc")
+		sql = "SELECT post_title, meta_value from %s where meta_key = '_length' ORDER BY ABS(meta_value)" % (self.product_meta)
 		if order.lower() == "desc":
 			sql += " DESC"
 
 		self.cursor.execute(sql)
 		data = self.cursor.fetchall()
+		return [row[0] for row in data]
 
+	#20
+	def find_prods_with_len(self, l):
+		print("List all products with %s %s" % ("length", str(l))) 
+		sql = "SELECT post_title, meta_value from %s where meta_key = '_length' and ABS(meta_value) = %s" % (self.product_meta, str(l))
+		self.cursor.execute(sql)
+		data = self.cursor.fetchall()
+		return [row[0] for row in data]
 
-		return data
+	#20.1
+	def find_num_prods_with_len(self, l):
+		print("List number of products with %s %s" % ("length", str(l))) 
+		sql = "SELECT post_title, meta_value from %s where meta_key = '_length' and ABS(meta_value) = %s" % (self.product_meta, str(l))
+		self.cursor.execute(sql)
+		data = self.cursor.fetchall()
+		return len(data)
 
+	#20.2
+	def find_cats_with_len(self, l):
+		print("List all categories with products with %s %s" % ("length", str(l))) 
+		sql = "SELECT DISTINCT cat_name, post_title, meta_value from %s where meta_key = '_length' and ABS(meta_value) = %s" % (self.product_meta, str(l))
+		self.cursor.execute(sql)
+		data = self.cursor.fetchall()
+		return [row[0] for row in data]
 
+	#20.3
+	def find_num_cats_with_len(self, l):
+		print("List number of categories with products with %s %s" % ("length", str(l)))
+		sql = "SELECT DISTINCT cat_name, post_title, meta_value from %s where meta_key = '_length' and ABS(meta_value) = %s" % (self.product_meta, str(l))
+		self.cursor.execute(sql)
+		data = self.cursor.fetchall()
+		return len(data)
 
-	#list all prods in cat/store in a certain range	
-	'''def find_prod_in_range(min, max):
-		SELECT post_id, meta_key, meta_value from wp_postmeta where meta_key = '_length' and meta_value >= min and meta_value <= max'''
+	#20.4
+	def find_prods_in_range(self, min, max):
+		print("List all prods from a range of %s %s-%s" % ("length", str(min), str(max))) 
+		sql = "SELECT post_title, meta_value from %s where meta_key = '_length' and ABS(meta_value) >= %s and ABS(meta_value) <= %s" % (self.product_meta, str(min), str(max))
+		self.cursor.execute(sql)
+		data = self.cursor.fetchall()
+		return [row[0] for row in data]
 
+	#20.5
+	def find_num_prods_in_range(self, min, max):
+		print("List number of prods from a range of %s %s-%s" % ("length", str(min), str(max)))
+		sql = "SELECT post_title, meta_value from %s where meta_key = '_length' and ABS(meta_value) >= %s and ABS(meta_value) <= %s" % (self.product_meta, str(min), str(max))
+		self.cursor.execute(sql)
+		data = self.cursor.fetchall()
+		return len(data)
 
+	#20.6
+	def find_cats_in_range(self, min, max):
+		print("List all cats from a range of %s %s-%s" % ("length", str(min), str(max))) 
+		sql = "SELECT cat_name, post_title, meta_value from %s where meta_key = '_length' and ABS(meta_value) >= %s and ABS(meta_value) <= %s" % (self.product_meta, str(min), str(max))
+		self.cursor.execute(sql)
+		data = self.cursor.fetchall()
+		return [row[0] for row in data]
+
+	#20.7
+	def find_num_cats_in_range(self, min, max):
+		print("List number of cats from a range of %s %s-%s" % ("length", str(min), str(max))) 
+		sql = "SELECT cat_name, post_title, meta_value from %s where meta_key = '_length' and ABS(meta_value) >= %s and ABS(meta_value) <= %s" % (self.product_meta, str(min), str(max))
+		self.cursor.execute(sql)
+		data = self.cursor.fetchall()
+		return len(data)
 
 	#THESE ARE BASICALLY THE SAME AS LENGTH. MAKE SURE LENGTH WORKS BEFORE PROCEEDING.
 	#what is the width	

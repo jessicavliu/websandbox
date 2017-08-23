@@ -40,46 +40,6 @@ class Product:
 	product_version="" 
 	price=""
 
-	def __init__(self, title, content, parent_category):
-		self.title = title
-		self.content = content
-		self.parent_category = parent_category
-
-		self.wp_page_template = _wp_page_template
-		self.wc_review_count = _wc_review_count
-		self.wc_rating_count = _wc_rating_count 
-		self.wc_average_rating = _wc_average_rating 
-		self.edit_lock = _edit_lock
-		self.edit_last = _edit_last 
-		self.sku = _sku
-		self.regular_price = _regular_price 
-		self.sale_price = ""
-		self.sale_price_dates_from = "" 
-		self.sale_price_dates_to = ""
-		self.total_sales = "0"
-		self.tax_status = "taxable"
-		self.tax_class = "" 
-		self.manage_stock = "no" 
-		self.backorders = "no"
-		self.sold_individually = "no" 
-		self.weight = ""
-		self.length = "" 
-		self.width = ""
-		self.height = "" 
-		self.upsell_ids = "a:0:{}"
-		self.crosssell_ids = "a:0:{}"
-		self.purchase_note = ""
-		self.default_attributes = "a:0:{}"
-		self.virtual = "no"
-		self.downloadable = "no" 
-		self.product_image_gallery = "" 
-		self.download_limit = "-1"
-		self.download_expiry = "-1" 
-		self.stock = ""
-		self.stock_status = "instock"
-		self.product_version = "3.0.9"
-		self.price = ""
-
 	def __init__(self, title, content, parent_category, _wp_page_template = "default", _wc_review_count = "0", _wc_rating_count = "a:0:{}", _wc_average_rating = "0", _edit_lock = "", _edit_last = "", _sku = "", _regular_price = "", _sale_price = "", _sale_price_dates_from = "", _sale_price_dates_to = "", _total_sales = "0", _tax_status = "taxable", _tax_class = "", _manage_stock = "no", _backorders = "no", _sold_individually = "no", _weight = "", _length = "", _width = "", _height = "", _upsell_ids = "a:0:{}", _crosssell_ids = "a:0:{}", _purchase_note = "", _default_attributes = "a:0:{}", _virtual = "no", _downloadable = "no", _product_image_gallery = "", _download_limit = "-1", _download_expiry = "-1", _stock = None, _stock_status = "instock", _product_version = "3.0.9", _price = ""):
 		
 		self.title = title

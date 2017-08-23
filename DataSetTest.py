@@ -195,31 +195,5 @@ print("List all prods in cat in a certain range of length")
 print()
 print()
 
-#----
-tbl_header = "wp_2"
-catset.setTblHeader(tbl_header)
-prodset.setTblHeader(tbl_header)
-
-#-----------------------------------------
-#DELETE
-
-'''clause = ""
-prodset.delete_product(clause)'''
-#-----------------------------------------
-###INSERT
-
-'''title = ""
-content = ""
-
-for i in range(1, 51):
-	title = "title " + str(i)
-	content = "content " + str(i)
-	prodset.insert_product(title, content)'''
-
-###UPDATE
-
-#prodset.update_product_description('title3', 'updated')
-
-#---
 
 prodset.getDb().close()

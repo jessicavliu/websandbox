@@ -171,6 +171,7 @@ class CategoryDataSet:
 	#1
 	#How many categories are there total?
 	def num_categories(self):
+		print("How many categories are there total?")
 		sql = "SELECT COUNT(*) FROM " + self.term_taxonomy + " WHERE taxonomy = " + "\'" + "product_cat" + "\'" 
 		self.cursor.execute(sql)
 		data = self.cursor.fetchone()	
@@ -179,7 +180,8 @@ class CategoryDataSet:
 	#2
 	#List all categories
 	def list_categories(self):
-		sql = "SELECT name FROM product_cat"
+		print("List all categories")
+		sql = "SELECT name FROM %s" % (self.product_cat)
 		self.cursor.execute(sql)
 		data = self.cursor.fetchall()
 		data_list = []
@@ -188,9 +190,9 @@ class CategoryDataSet:
 		return data_list
 
 	#3
-	#List all categories and the number of products they have
 	def list_categories_and_prods(self):
-		sql = "SELECT name, count FROM product_cat"
+		print("List all categories and the number of products they have.")
+		sql = "SELECT name, count FROM %s" % (self.product_cat)
 		self.cursor.execute(sql)
 		data = self.cursor.fetchall()
 		data_dict = {}
@@ -199,18 +201,18 @@ class CategoryDataSet:
 		return data_dict
 
 	#4
-	#Given a category x, how many products are there in x? 
 	def find_num_of_prods_in_cat(self, c):
-		sql = "SELECT count FROM product_cat where name = " + "\'" + c + "\'"
+		print("Given the category " + c + ", how many products are there in " + c + "?")
+		sql = "SELECT count FROM %s where name = %s" % (self.product_cat, "\'" + c + "\'")
 		self.cursor.execute(sql)
 		data = self.cursor.fetchone() 
 		return data[0]
 
 	#5
-	#Which category has the most products?
 	#Store in a dictionary (name:count); find max
 	def cat_max_prods(self):
-		sql = "SELECT name, count from product_cat"
+		print("Which category has the most products?")
+		sql = "SELECT name, count from %s" % (self.product_cat)
 		self.cursor.execute(sql)
 		data = self.cursor.fetchall()
 		data_dict = {}
@@ -219,10 +221,10 @@ class CategoryDataSet:
 		return max(data_dict, key=data_dict.get)
 
 	#6
-	#Which category has the least products?
 	#Store in a dictionary (name:count); find min
 	def cat_min_prods(self):
-		sql = "SELECT name, count from product_cat"
+		print("Which category has the least products?")
+		sql = "SELECT name, count from %s" % (self.product_cat)
 		self.cursor.execute(sql)
 		data = self.cursor.fetchall()
 		data_dict = {}
@@ -231,10 +233,10 @@ class CategoryDataSet:
 		return min(data_dict, key=data_dict.get)
 
 	#7
-	#What is the description for category c?
 	#throw warning instead? something that's not normal input in a db so no one gets confused
 	def get_cat_description(self, c):
-		sql = "SELECT description from product_cat where name = " + "\'" + c + "\'"
+		print("What is the description for category " + c + "?")
+		sql = "SELECT description from %s where name = %s" % (self.product_cat, "\'" + c + "\'")
 		self.cursor.execute(sql)
 		data = self.cursor.fetchone()
 		if data[0] == '':
@@ -242,17 +244,18 @@ class CategoryDataSet:
 		return data[0]
 
 	#7.1
-	###Return descriptions of all cats with name c
 	def get_cat_descriptions(self, c):
-		sql = "SELECT description FROM product_cat where name = " + "\'" + c + "\'"
+		print("Return descriptions of all categories with name " + c)
+		sql = "SELECT description FROM %s where name = %s" % (self.product_cat, "\'" + c + "\'")
 		self.cursor.execute(sql)
 		data = self.cursor.fetchall()
 		return [row[0] for row in data]
 
 	#7.2
-	###Does content s match the description for any cat?
+	
 	def does_any_cat_match_search(self, s):
-		sql = "SELECT name, description from product_cat"
+		print("Does content s exist for any category descriptions?")
+		sql = "SELECT name, description from %s" % (self.product_cat)
 		self.cursor.execute(sql)
 		data = self.cursor.fetchall()
 		for row in data:
@@ -261,9 +264,9 @@ class CategoryDataSet:
 		return False
 
 	#7.3
-	###Does content s exist for any category named c?
 	def does_search_match_cat(self, s, c):
-		sql = "SELECT name, description FROM product_cat WHERE name =" + "\'" + c + "\'"
+		print("Does content %s exist for any category named c?" % s)
+		sql = "SELECT name, description FROM %s WHERE name =%s" % (self.product_cat, "\'" + c + "\'")
 		self.cursor.execute(sql)
 		data = self.cursor.fetchall()
 		for row in data:
@@ -271,24 +274,24 @@ class CategoryDataSet:
 		return False
 
 	#7.4
-	###Does content s exist for a list of category c = [c1, c2, ...]?
 	def does_search_match_list_cat(self, s, c_list):
+		print("Does content %s exist for a list of category %s?" %(s, c_list))
 		for c in c_list:
 			if self.does_search_match_cat(s, c): return True
 		return False
 
 	#7.5
-	###Return instances where string s is content for a category.
 	def find_cat_match(self, s):
-		sql = "SELECT name from product_cat where description = " + "\'" + s + "\'"
+		print("Return instances where string s is content for a category.")
+		sql = "SELECT name from %s where description = %s" % (self.product_cat, "\'" + s + "\'")
 		self.cursor.execute(sql)
 		data = self.cursor.fetchall()
 		return [row[0] for row in data]
 
 	#7.6
-	###Return instances where string s is a substring for content for category
 	def find_cat_substring_match(self, s):
-		sql = "SELECT name, description from product_cat"
+		print("Return instances where string s is a substring for content for category.")
+		sql = "SELECT name, description from %s" % (self.product_cat)
 		self.cursor.execute(sql)
 		data = self.cursor.fetchall()
 		data_list = []
@@ -297,31 +300,31 @@ class CategoryDataSet:
 		return data_list
 
 	#8
-	#Does category c have a parent category?
 	def has_parent(self, c):
-		sql = "SELECT parent from product_cat where name = " + "\'" + c + "\'"
+		print("Does category " + c + " have a parent category?")
+		sql = "SELECT parent from %s where name = %s" % (self.product_cat, "\'" + c + "\'")
 		self.cursor.execute(sql)
 		data = self.cursor.fetchone()
 		return True if data[0] != 0 else False
 
 	#9
-	#What is the parent of category c?
 	#see 6 for throwing warnings not strings
 	def parent_of_cat(self, c):
+		print ("What is the parent of category " + c + "?")
 		if self.has_parent(c):
-			sql = "SELECT parent from product_cat where name = " + "\'" + c + "\'"
+			sql = "SELECT parent from %s where name = %s" % (self.product_cat, "\'" + c + "\'")
 			self.cursor.execute(sql)
 			data = self.cursor.fetchone()
-			sql = "SELECT name from product_cat where term_id = " + "\'" + str(data[0]) + "\'"
+			sql = "SELECT name from %s where term_id = %s" % (self.product_cat, "\'" + str(data[0]) + "\'")
 			self.cursor.execute(sql)
 			data2 = self.cursor.fetchone()
 			return data2[0]
 		return ("no parent found")
 
 	#9.5
-	###List all parent categories
 	def list_parent_cats(self):
-		sql = "SELECT name, parent FROM product_cat"
+		print("List all parent categories")
+		sql = "SELECT name, parent FROM %s" % (self.product_cat)
 		self.cursor.execute(sql)
 		data = self.cursor.fetchall()
 		data_list = []

@@ -1,6 +1,6 @@
 class Category:
 
-	term_id = None #seems like it should be a field. But I don't set it- the db does. So should I keep it?
+	#term_id = None #seems like it should be a field. But I don't set it- the db does. So should I keep it?
 	name = ""
 	description = ""
 	count = 0
